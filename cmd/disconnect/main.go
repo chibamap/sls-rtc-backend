@@ -2,7 +2,7 @@ package main
 
 import (
 	"log"
-	"sls-rtc-backend/internal/connection"
+	"sls-rtc-backend/pkg/socket"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -14,12 +14,13 @@ type proxyResponse events.APIGatewayProxyResponse
 func handler(request proxyRequest) (proxyResponse, error) {
 	log.Println("disconnected request")
 
-	if _, err := connection.OnDisconnected(); err != nil {
+	msg, err := socket.OnDisconnected(request.RequestContext.ConnectionID)
+	if err != nil {
 		return proxyResponse{}, err
 	}
 
 	return proxyResponse{
-		Body:       "disconnected",
+		Body:       msg,
 		StatusCode: 200,
 	}, nil
 }

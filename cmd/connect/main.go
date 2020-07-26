@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"sls-rtc-backend/internal/connection"
+	"sls-rtc-backend/pkg/socket"
 )
 
 type proxyRequest events.APIGatewayWebsocketProxyRequest
@@ -14,13 +14,15 @@ type proxyResponse events.APIGatewayProxyResponse
 
 func handler(request proxyRequest) (proxyResponse, error) {
 	log.Println("connected request")
-
-	if _, err := connection.OnConnected(); err != nil {
+	connectionID := request.RequestContext.ConnectionID
+	msg, err := socket.OnConnected(connectionID)
+	if err != nil {
+		log.Println(msg)
 		return proxyResponse{}, err
 	}
 
 	return proxyResponse{
-		Body:       "connected",
+		Body:       msg,
 		StatusCode: 200,
 	}, nil
 }

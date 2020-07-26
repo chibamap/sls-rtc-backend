@@ -170,7 +170,7 @@ Resources:
     Properties:
       CodeUri: cmd/connect/
       Handler: connect
-      MemorySize: 256
+      MemorySize: 128
       Runtime: go1.x
       Environment:
         Variables:
@@ -193,7 +193,7 @@ Resources:
     Properties:
       CodeUri: cmd/disconnect/
       Handler: disconnect
-      MemorySize: 256
+      MemorySize: 128
       Runtime: go1.x
       Environment:
         Variables:
