@@ -2,7 +2,8 @@ package main
 
 import (
 	"log"
-	"sls-rtc-backend/pkg/socket"
+
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/socket"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

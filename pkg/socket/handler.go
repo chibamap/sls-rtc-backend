@@ -1,8 +1,9 @@
 package socket
 
 import (
-	"sls-rtc-backend/internal/ddb"
-	"sls-rtc-backend/pkg/connection"
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/ddb"
+
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
 )
 
 // OnConnected event handling on connected websocket
@@ -30,9 +31,4 @@ func OnDisconnected(connectionID string) (string, error) {
 		return "", err
 	}
 	return "bye", nil
-}
-
-// Hello just return message to caller
-func Hello(connectionID string) (string, error) {
-	return "sent message", nil
 }

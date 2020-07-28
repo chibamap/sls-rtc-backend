@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-	"sls-rtc-backend/pkg/socket"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/socket"
 )
 
 type proxyRequest events.APIGatewayWebsocketProxyRequest

@@ -2,9 +2,9 @@ package ddb
 
 import (
 	"errors"
-	"log"
 	"os"
-	"sls-rtc-backend/pkg/connection"
+
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -56,7 +56,7 @@ func (table *ConnectionTable) Put(conn *connection.Connection) error {
 // Delete connection item from dynamo db
 func (table *ConnectionTable) Delete(conn *connection.Connection) error {
 	attributeValues, _ := dynamodbattribute.MarshalMap(conn)
-	log.Println(attributeValues)
+
 	input := &dynamodb.DeleteItemInput{
 		Key:       attributeValues,
 		TableName: aws.String(table.TableName),
@@ -64,4 +64,18 @@ func (table *ConnectionTable) Delete(conn *connection.Connection) error {
 
 	_, err := table.ddb.DeleteItem(input)
 	return err
+}
+
+// ScanAll from connection table
+func (table *ConnectionTable) ScanAll() ([]connection.Connection, error) {
+	input := &dynamodb.ScanInput{
+		TableName: aws.String(table.TableName),
+	}
+	output, err := table.ddb.Scan(input)
+	if err != nil {
+		return nil, err
+	}
+	recs := []connection.Connection{}
+	dynamodbattribute.UnmarshalListOfMaps(output.Items, &recs)
+	return recs, nil
 }
