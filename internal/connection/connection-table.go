@@ -1,27 +1,26 @@
-package ddb
+package connection
 
 import (
 	"errors"
 	"os"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection/ddb"
 )
 
-// ConnectionTable class
-type ConnectionTable struct {
+// Table class
+type Table struct {
 	// TableName which use dynamodb table name
 	TableName string
 	ddb       *dynamodb.DynamoDB
 }
 
-// NewConnectionTable instance from table name
-func NewConnectionTable() (*ConnectionTable, error) {
+// NewTable instance from table name
+func NewTable() (*Table, error) {
 
-	ddbSession, err := NewDynamoDBSession()
+	ddbSession, err := ddb.NewDynamoDBSession()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +40,7 @@ func NewConnectionTable() (*ConnectionTable, error) {
 }
 
 // Put connection item to dynamo db
-func (table *ConnectionTable) Put(conn *connection.Connection) error {
+func (table *Table) Put(conn *Connection) error {
 	attributeValues, _ := dynamodbattribute.MarshalMap(conn)
 
 	input := &dynamodb.PutItemInput{
@@ -54,7 +53,7 @@ func (table *ConnectionTable) Put(conn *connection.Connection) error {
 }
 
 // Delete connection item from dynamo db
-func (table *ConnectionTable) Delete(conn *connection.Connection) error {
+func (table *Table) Delete(conn *Connection) error {
 	attributeValues, _ := dynamodbattribute.MarshalMap(conn)
 
 	input := &dynamodb.DeleteItemInput{
@@ -67,7 +66,7 @@ func (table *ConnectionTable) Delete(conn *connection.Connection) error {
 }
 
 // ScanAll from connection table
-func (table *ConnectionTable) ScanAll() ([]connection.Connection, error) {
+func (table *Table) ScanAll() ([]Connection, error) {
 	input := &dynamodb.ScanInput{
 		TableName: aws.String(table.TableName),
 	}
@@ -75,7 +74,7 @@ func (table *ConnectionTable) ScanAll() ([]connection.Connection, error) {
 	if err != nil {
 		return nil, err
 	}
-	recs := []connection.Connection{}
+	recs := []Connection{}
 	dynamodbattribute.UnmarshalListOfMaps(output.Items, &recs)
 	return recs, nil
 }

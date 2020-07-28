@@ -115,7 +115,7 @@ Resources:
         Fn::Sub:
             arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
 
-  SendMessagePermission:
+  MessagePermission:
     Type: AWS::Lambda::Permission
     DependsOn:
       - SlsRtcWebSocket
@@ -123,6 +123,38 @@ Resources:
       Action: lambda:InvokeFunction
       FunctionName: !Ref SendMessageFunction
       Principal: apigateway.amazonaws.com
+
+  CreateRoomRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+      RouteKey: message
+      AuthorizationType: NONE
+      OperationName: CreateRoomRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref CreateRoomInteg
+
+  CreateRoomInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+      Description: create room api
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateRoomPermission.Arn}/invocations
+
+  CreateRoomPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SlsRtcWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CreateRoomFunction
+      Principal: apigateway.amazonaws.com
+
 
   Deployment:
     Type: AWS::ApiGatewayV2::Deployment
@@ -145,11 +177,29 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-      - AttributeName: "connectionId"
-        AttributeType: "S"
+        - AttributeName: "pk"
+          AttributeType: "S"
+        - AttributeName: "connectionID"
+          AttributeType: "S"
+        - AttributeName: "roomID"
+          AttributeType: "S"
+
       KeySchema:
-      - AttributeName: "connectionId"
-        KeyType: "HASH"
+        - AttributeName: "pk"
+          KeyType: "HASH"
+
+      GlobalSecondaryIndexes:
+        - IndexName: "RoomMate"
+          KeySchema:
+            - AttributeName: "roomID"
+              KeyType: "HASH"
+            - AttributeName: "connectionID"
+              KeyType: "RANGE"
+          Projection:
+            NonKeyAttributes:
+              - "userName"
+            ProjectionType: "INCLUDE"
+
       BillingMode: PAY_PER_REQUEST
       TableName: !Ref TableName
 
@@ -187,6 +237,26 @@ Resources:
       CodeUri: cmd/message/
       Handler: message
       MemorySize: 256
+      Runtime: go1.x
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref TableName
+      - Statement:
+        - Effect: Allow
+          Action:
+          - 'execute-api:ManageConnections'
+          Resource:
+          - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SlsRtcWebSocket}/*'
+
+  CreateRoomFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cmd/create-room/
+      Handler: create-room
+      MemorySize: 128
       Runtime: go1.x
       Environment:
         Variables:
