@@ -31,7 +31,7 @@ func NewTable() (*Table, error) {
 		return nil, errors.New("tabne name was not set")
 	}
 
-	conn := &ConnectionTable{
+	conn := &Table{
 		ddb:       ddbSession,
 		TableName: tableName,
 	}
