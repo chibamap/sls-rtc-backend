@@ -43,6 +43,21 @@ func newTable() (*table, error) {
 
 	return table, nil
 }
+func (table *table) Get(connectionID string) (*Connection, error) {
+	conn := New(connectionID)
+	attributeValues, _ := dynamodbattribute.MarshalMap(conn)
+	input := &dynamodb.GetItemInput{
+		Key:       attributeValues,
+		TableName: &table.tableName,
+	}
+	res, err := table.ddb.GetItem(input)
+	if err != nil {
+		return nil, err
+	}
+	connRecord := Connection{}
+	err = dynamodbattribute.UnmarshalMap(res.Item, &connRecord)
+	return &connRecord, err
+}
 
 // Put connection item to dynamo db
 func (table *table) Put(conn *Connection) error {

@@ -6,6 +6,7 @@ type Connection struct {
 	PK           string `json:"pk"`
 	ConnectionID string `json:"connectionID"`
 	RoomID       string `json:"roomID"`
+	Username     string `json:"username"`
 	Owner        string
 }
 
@@ -49,4 +50,14 @@ func (m *Manager) NewConnection(connectionID string) (*Connection, error) {
 func (m *Manager) Disconnected(connectionID string) error {
 	conn := New(connectionID)
 	return m.table.Delete(conn)
+}
+
+// FindConnection find out connection record from table
+func (m *Manager) FindConnection(connectionID string) (*Connection, error) {
+	return m.table.Get(connectionID)
+}
+
+// RetrieveRoomConnections retrieve connections at same room
+func (m *Manager) RetrieveRoomConnections(roomID string) ([]*Connection, error) {
+	return nil, nil
 }

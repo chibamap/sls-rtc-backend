@@ -33,8 +33,8 @@ func New(ctx events.APIGatewayWebsocketProxyRequestContext) (*Apigw, error) {
 	}, nil
 }
 
-// Send data to connections
-func (a *Apigw) Send(data []byte, conns []connection.Connection) error {
+// Multicast data to connections
+func (a *Apigw) Multicast(data []byte, conns []*connection.Connection) error {
 	postInput := &apigatewaymanagementapi.PostToConnectionInput{
 		Data: data,
 	}
