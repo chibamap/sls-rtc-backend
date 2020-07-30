@@ -9,39 +9,44 @@ type Connection struct {
 	Owner        string
 }
 
-// ConnectionManager manage connection
-type ConnectionManager struct {
-	Conn  *Connection
-	table *Table
+const pkPrefix = "connectionID:"
+const roomRecPrefix = "roomID:"
+
+// Manager manage connection
+type Manager struct {
+	table *table
 }
 
 // New return Connection pointer
 func New(connectionID string) *Connection {
+	pk := pkPrefix + connectionID
 	return &Connection{
+		PK:           pk,
 		ConnectionID: connectionID}
 }
 
-// NewConnectionManager returns connection manager instance
-func NewConnectionManager(connectionID string) (*ConnectionManager, error) {
+// NewManager returns connection manager instance
+func NewManager() (*Manager, error) {
 
-	conn := New(connectionID)
-	table, err := NewTable()
+	table, err := newTable()
 	if err != nil {
 		return nil, err
 	}
 
-	return &ConnectionManager{
-		conn, table}, nil
+	return &Manager{
+		table}, nil
 }
 
-// Store connection
-func (cm *ConnectionManager) Store() error {
-	cm.Conn.PK = cm.Conn.ConnectionID
-	return cm.table.Put(cm.Conn)
+// NewConnection make new connection and store to table
+func (m *Manager) NewConnection(connectionID string) (*Connection, error) {
+	conn := New(connectionID)
+
+	err := m.table.Put(conn)
+	return conn, err
 }
 
-// Delete connection
-func (cm *ConnectionManager) Delete() error {
-	cm.Conn.PK = cm.Conn.ConnectionID
-	return cm.table.Delete(cm.Conn)
+// Disconnected cleanup records beside connection
+func (m *Manager) Disconnected(connectionID string) error {
+	conn := New(connectionID)
+	return m.table.Delete(conn)
 }

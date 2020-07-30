@@ -6,26 +6,28 @@ import (
 
 // OnConnected event handling on connected websocket
 func OnConnected(connectionID string) (string, error) {
-	cm, err := connection.NewConnectionManager(connectionID)
 
-	if err := conn.StoreConnection(); err != nil {
+	cm, err := connection.NewManager()
+	if err != nil {
+		return "failed to initialize manager", err
+	}
+
+	if _, err := cm.NewConnection(connectionID); err != nil {
 		return "failed to connnect dynamodb", err
 	}
 
-	if err := cm.Store(); err != nil {
-		return "failed to put item", err
-	}
 	return "ok", nil
 }
 
 // OnDisconnected event handling on disconnected
 func OnDisconnected(connectionID string) (string, error) {
-	cm, err := connection.NewConnectionManager(connectionID)
+	cm, err := connection.NewManager()
 
 	if err != nil {
-		return "", err
+		return "failed to initialize manager", err
 	}
-	if err := cm.Delete(); err != nil {
+
+	if err := cm.Disconnected(connectionID); err != nil {
 		return "", err
 	}
 	return "bye", nil
