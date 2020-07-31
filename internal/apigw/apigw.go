@@ -1,6 +1,7 @@
 package apigw
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -15,7 +16,21 @@ import (
 type Apigw struct {
 	// TableName which use dynamodb table name
 	client *apigatewaymanagementapi.ApiGatewayManagementApi
+	ctx    events.APIGatewayWebsocketProxyRequestContext
 }
+
+// MessageFrame message frame for transfer
+type MessageFrame struct {
+	Type string `json:"type"`
+	Body string `json:"message"`
+}
+
+const (
+	// TypeEnter enter room event
+	TypeEnter = "enter"
+	// TypeMessage message event
+	TypeMessage = "message"
+)
 
 // New make dynamodb session
 func New(ctx events.APIGatewayWebsocketProxyRequestContext) (*Apigw, error) {
@@ -30,11 +45,16 @@ func New(ctx events.APIGatewayWebsocketProxyRequestContext) (*Apigw, error) {
 
 	return &Apigw{
 		client,
+		ctx,
 	}, nil
 }
 
 // Multicast data to connections
-func (a *Apigw) Multicast(data []byte, conns []*connection.Connection) error {
+func (a *Apigw) Multicast(message *MessageFrame, conns []*connection.Connection) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
 	postInput := &apigatewaymanagementapi.PostToConnectionInput{
 		Data: data,
 	}
@@ -46,4 +66,19 @@ func (a *Apigw) Multicast(data []byte, conns []*connection.Connection) error {
 		}
 	}
 	return nil
+}
+
+// Respond to current connection
+func (a *Apigw) Respond(message *MessageFrame) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	postInput := &apigatewaymanagementapi.PostToConnectionInput{
+		Data:         data,
+		ConnectionId: &a.ctx.ConnectionID,
+	}
+
+	_, err = a.client.PostToConnection(postInput)
+	return err
 }

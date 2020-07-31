@@ -2,6 +2,7 @@ package connection
 
 import (
 	"errors"
+	"log"
 	"os"
 	"sync"
 
@@ -17,6 +18,8 @@ type table struct {
 	tableName string
 	ddb       *dynamodb.DynamoDB
 }
+
+const uniqueExpression = "attribute_not_exists(pk)"
 
 var ddbsession *dynamodb.DynamoDB
 var once sync.Once
@@ -64,8 +67,9 @@ func (table *table) Put(conn *Connection) error {
 	attributeValues, _ := dynamodbattribute.MarshalMap(conn)
 
 	input := &dynamodb.PutItemInput{
-		Item:      attributeValues,
-		TableName: aws.String(table.tableName),
+		Item:                attributeValues,
+		TableName:           aws.String(table.tableName),
+		ConditionExpression: aws.String(uniqueExpression),
 	}
 
 	_, err := table.ddb.PutItem(input)
@@ -97,4 +101,27 @@ func (table *table) ScanAll() ([]Connection, error) {
 	recs := []Connection{}
 	dynamodbattribute.UnmarshalListOfMaps(output.Items, &recs)
 	return recs, nil
+}
+
+// TransactPut
+func (table *table) TransactWrite(items map[string]*Connection) (bool, error) {
+	transactionItems := make([]*dynamodb.TransactWriteItem, len(items))
+
+	input := &dynamodb.TransactWriteItemsInput{
+		TransactItems: transactionItems,
+	}
+	_, err := table.ddb.TransactWriteItems(input)
+
+	if err != nil {
+		switch t := err.(type) {
+		case *dynamodb.TransactionCanceledException:
+			log.Fatalf("failed to write items: %s\n%v",
+				t.Message(), t.CancellationReasons)
+			return false, nil
+		default:
+			return false, err
+
+		}
+	}
+	return true, nil
 }

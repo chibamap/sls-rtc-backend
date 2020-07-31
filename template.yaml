@@ -128,7 +128,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref SlsRtcWebSocket
-      RouteKey: message
+      RouteKey: createroom
       AuthorizationType: NONE
       OperationName: CreateRoomRoute
       Target: !Join
@@ -144,7 +144,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateRoomPermission.Arn}/invocations
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateRoomFunction.Arn}/invocations
 
   CreateRoomPermission:
     Type: AWS::Lambda::Permission
@@ -254,8 +254,8 @@ Resources:
   CreateRoomFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: cmd/create-room/
-      Handler: create-room
+      CodeUri: cmd/createroom/
+      Handler: createroom
       MemorySize: 128
       Runtime: go1.x
       Environment:

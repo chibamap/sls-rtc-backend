@@ -1,4 +1,4 @@
-package api
+package message
 
 import (
 	"encoding/json"
@@ -11,11 +11,6 @@ import (
 
 type messageInterface struct {
 	Message string `json:"message"`
-}
-
-type transferMessage struct {
-	Message  string `json:"message"`
-	Username string `json:"username"`
 }
 
 // OnMessage send message to room mate
@@ -35,14 +30,8 @@ func OnMessage(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 	if err := json.Unmarshal([]byte(req.Body), &messageFrame); err != nil {
 		return "", err
 	}
-	transferMessage := transferMessage{
-		Message:  messageFrame.Message,
-		Username: conn.Username,
-	}
-
-	data, err := json.Marshal(transferMessage)
-	if err != nil {
-		return "failed to marshal transfer message", err
+	transferMessage := &apigw.MessageFrame{
+		Body: messageFrame.Message,
 	}
 
 	apigw, err := apigw.New(req.RequestContext)
@@ -50,7 +39,7 @@ func OnMessage(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		return "", err
 	}
 
-	if err := apigw.Multicast(data, connections); err != nil {
+	if err := apigw.Multicast(transferMessage, connections); err != nil {
 		return "", err
 	}
 	return "sent", nil
