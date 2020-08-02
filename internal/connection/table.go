@@ -170,7 +170,7 @@ func (table *table) ScanAll() ([]Connection, error) {
 }
 
 // TransactPut
-func (table *table) PutNewRoom(room *Connection, ownerConnectionID string) (bool, error) {
+func (table *table) PutNewRoom(room *tableRecord, ownerConnectionID string) (bool, error) {
 
 	roomItem, _ := dynamodbattribute.MarshalMap(room)
 	ownerPK := pkPrefixConn + ownerConnectionID

@@ -107,12 +107,7 @@ func TestPutNewRoom(t *testing.T) {
 			t.Fatal("could not create test record")
 		}
 
-		pk := pkPrefixRoom + testRoomID
-		room := &Connection{
-			PK:           pk,
-			ConnectionID: blankValue,
-			RoomID:       blankValue,
-		}
+		room := newRoom(testRoomID)
 
 		success, err := table.PutNewRoom(room, testConnID)
 		assert.True(t, success)
@@ -131,13 +126,7 @@ func TestPutNewRoom(t *testing.T) {
 			t.Fatal("could not create test record2")
 		}
 
-		testRoomID := "testroom2"
-		pk := pkPrefixRoom + testRoomID
-		room := &Connection{
-			PK:           pk,
-			ConnectionID: blankValue,
-			RoomID:       blankValue,
-		}
+		room := newRoom(testRoomID)
 
 		success, err := table.PutNewRoom(room, testConnID2)
 		assert.False(t, success)
@@ -148,5 +137,5 @@ func TestPutNewRoom(t *testing.T) {
 
 	table.delete(pkPrefixConn + testConnID)
 	table.delete(pkPrefixConn + testConnID2)
-	table.delete(pkPrefixRoom + "testroom2")
+	table.delete(pkPrefixRoom + testRoomID)
 }

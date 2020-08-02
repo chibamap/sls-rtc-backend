@@ -31,7 +31,7 @@ func newRoom(roomID string) *tableRecord {
 	return &tableRecord{
 		PK:           pk,
 		ConnectionID: blankValue,
-		RoomID:       blankValue,
+		RoomID:       roomID,
 	}
 }
 
@@ -96,13 +96,6 @@ func (m *Manager) RetrieveRoomConnections(roomID string) ([]*Connection, error) 
 
 // CreateRoom create room
 func (m *Manager) CreateRoom(roomID string, ownerConnectionID string) (bool, error) {
-
-	pk := pkPrefixRoom + roomID
-	room := &Connection{
-		PK:           pk,
-		ConnectionID: blankValue,
-		RoomID:       blankValue,
-	}
-
+	room := newRoom(roomID)
 	return m.table.PutNewRoom(room, ownerConnectionID)
 }
