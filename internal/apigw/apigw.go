@@ -22,7 +22,7 @@ type Apigw struct {
 // MessageFrame message frame for transfer
 type MessageFrame struct {
 	Type string `json:"type"`
-	Body string `json:"message"`
+	Body string `json:"body"`
 }
 
 const (

@@ -30,11 +30,7 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		return "could not initialize connection manager", err
 	}
 
-	// find connection
-	conn, err := cm.FindConnection(req.RequestContext.ConnectionID)
-	if err != nil {
-		return "could not find connection record", err
-	}
+	ownerID := req.RequestContext.ConnectionID
 
 	// loop until unique room has been created. up to 5 times. return error it retry more than 5 times
 	try := 1
@@ -45,8 +41,8 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 			log.Println("creating uuid achieved to max retry count")
 			break
 		}
-		uid = uuid.New().String()
-		success, err = cm.NewRoom(uid, conn)
+		uid = generateRoomID()
+		success, err = cm.CreateRoom(uid, ownerID)
 		if err != nil {
 			return "failed to create room", err
 		}
@@ -58,9 +54,9 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 	}
 
 	// notify success
-
 	message := &apigw.MessageFrame{
 		Type: apigw.TypeEnter,
+		Body: uid,
 	}
 	gwClient, err := apigw.New(req.RequestContext)
 	if err != nil {
@@ -71,4 +67,8 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		return "failed to respond", err
 	}
 	return "ok", nil
+}
+
+func generateRoomID() string {
+	return uuid.New().String()
 }

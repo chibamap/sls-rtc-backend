@@ -1,16 +1,12 @@
 package connection
 
 import (
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"errors"
+	"log"
+	"os"
 )
 
-const pkPrefix = "connectionID#"
-const roomRecPrefix = "roomID#"
-const initialRoom = "-"
-
-// Connection webwocket management
+// Connection dynamodb record structure
 type Connection struct {
 	// ConnectionID request.RequestContext.ConnectionID
 	PK           string `json:"pk"`
@@ -22,11 +18,21 @@ type Connection struct {
 
 // New return Connection pointer
 func New(connectionID string) *Connection {
-	pk := pkPrefix + connectionID
+	pk := pkPrefixConn + connectionID
 	return &Connection{
 		PK:           pk,
 		ConnectionID: connectionID,
-		RoomID:       initialRoom}
+		RoomID:       blankValue}
+}
+
+// NewRoom return table record struct
+func newRoom(roomID string) *tableRecord {
+	pk := pkPrefixRoom + roomID
+	return &tableRecord{
+		PK:           pk,
+		ConnectionID: blankValue,
+		RoomID:       blankValue,
+	}
 }
 
 // Manager manage connection
@@ -34,13 +40,21 @@ type Manager struct {
 	table *table
 }
 
+// ConnectionTableName the name of dynamodb table
+var ConnectionTableName string
+
+func init() {
+	ConnectionTableName = os.Getenv("TABLE_NAME")
+}
+
 // NewManager returns connection manager instance
 func NewManager() (*Manager, error) {
 
-	table, err := newTable()
-	if err != nil {
-		return nil, err
+	if ConnectionTableName == "" {
+		return nil, errors.New("tabne name was not set")
 	}
+
+	table := newTable(ConnectionTableName)
 
 	return &Manager{
 		table}, nil
@@ -56,13 +70,23 @@ func (m *Manager) NewConnection(connectionID string) (*Connection, error) {
 
 // Disconnected cleanup records beside connection
 func (m *Manager) Disconnected(connectionID string) error {
-	conn := New(connectionID)
-	return m.table.Delete(conn)
+	conn, err := m.table.GetConn(connectionID)
+	if err != nil {
+		return err
+	}
+
+	if err = m.table.DeleteConnection(connectionID); err != nil {
+		log.Println(err)
+	}
+	if err = m.table.DeleteRoom(conn.RoomID); err != nil {
+		log.Println(err)
+	}
+	return err
 }
 
 // FindConnection find out connection record from table
 func (m *Manager) FindConnection(connectionID string) (*Connection, error) {
-	return m.table.Get(connectionID)
+	return m.table.GetConn(connectionID)
 }
 
 // RetrieveRoomConnections retrieve connections at same room
@@ -70,39 +94,15 @@ func (m *Manager) RetrieveRoomConnections(roomID string) ([]*Connection, error) 
 	return nil, nil
 }
 
-// NewRoom create room
-func (m *Manager) NewRoom(roomID string, ownerConn *Connection) (bool, error) {
+// CreateRoom create room
+func (m *Manager) CreateRoom(roomID string, ownerConnectionID string) (bool, error) {
 
+	pk := pkPrefixRoom + roomID
 	room := &Connection{
-		PK:           roomRecPrefix + roomID,
-		ConnectionID: ownerConn.ConnectionID,
-		RoomID:       roomID,
+		PK:           pk,
+		ConnectionID: blankValue,
+		RoomID:       blankValue,
 	}
 
-	ownerConn.RoomID = roomID
-	ownerKey, _ := dynamodbattribute.MarshalMap(ownerConn)
-	roomKey, _ := dynamodbattribute.MarshalMap(room)
-	items := [] *dynamodb.TransactWriteItem{
-	&dynamodb.TransactWriteItem{
-		Update: &dynamodb.Update{
-			Key: ownerKey,
-			UpdateExpression: "SET roomID = :roomID",
-			ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-				":roomID": { S: aws.String(roomID) },
-			},
-		},
-	},
-	&dynamodb.TransactWriteItem{
-		Put: &dynamodb.Put{
-Item: room
-			}
-		}
-	}
-}
-	err := m.table.TransactPut([]*Connection{
-		room,
-		ownerConn,
-	})
-
-	return false, err
+	return m.table.PutNewRoom(room, ownerConnectionID)
 }
