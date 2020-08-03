@@ -19,12 +19,12 @@ func TestNewConnection(t *testing.T) {
 
 	t.Run("Successful Connected", func(t *testing.T) {
 
-		created, err := cm.NewConnection(testConnectionID)
+		err := cm.NewConnection(testConnectionID)
 		assert.Nil(t, err)
 
 		fetched, err := tm.GetConn(testConnectionID)
 		assert.Nil(t, err)
-		assert.Equal(t, created.PK, fetched.PK)
+		assert.Equal(t, testConnectionID, fetched.ConnectionID)
 	})
 
 	tm.delete(pkPrefixRoom + testConnectionID)
@@ -40,8 +40,8 @@ func TestDisconnected(t *testing.T) {
 		t.Fatal("Error failed to initialize connection manager")
 	}
 	testConnectionID := "test-disconnected-conn1"
-	testConnection := New(testConnectionID)
-	if err = table.Put(testConnection); err != nil {
+	testConnection := NewConnection(testConnectionID)
+	if err = table.PutConnection(testConnection); err != nil {
 		t.Fatal("Error failed to create test record")
 	}
 
@@ -58,16 +58,16 @@ func TestDisconnected(t *testing.T) {
 
 	testRoomID := "testroom1"
 	testConnection.RoomID = testRoomID
-	if err = table.Put(testConnection); err != nil {
+	if err = table.PutNewConnection(testConnection); err != nil {
 		t.Fatal("Error failed to create test record")
 	}
 
-	room := newRoom(testRoomID)
-	if err := table.PutRecord(room); err != nil {
+	room := NewRoom(testRoomID)
+	if err := table.PutNewRoom(room); err != nil {
 		t.Fatal("failed to create test romm record")
 	}
 
-	t.Run("Successful delete connection with room", func(t *testing.T) {
+	t.Run("Successful delete connection with empty room", func(t *testing.T) {
 
 		err := cm.Disconnected(testConnectionID)
 		assert.Nil(t, err)
@@ -91,47 +91,80 @@ func TestCreateRoom(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error failed to initialize connection manager")
 	}
-	testConnectionID := "test-newroom-conn1"
-	testConnection := New(testConnectionID)
-	if err = table.Put(testConnection); err != nil {
-		t.Fatal("Error failed to create test record")
-	}
 
 	testRoomID := "test-newroom-id1"
 
 	t.Run("Successful Created Room", func(t *testing.T) {
-		success, err := cm.CreateRoom(testRoomID, testConnectionID)
+		success, err := cm.CreateRoom(testRoomID)
 		assert.Nil(t, err)
 		assert.True(t, success)
 
-		pk := pkPrefixConn + testConnectionID
-		fetchedConn, err := table.consistentRead(pk)
-		assert.Equal(t, testRoomID, fetchedConn.RoomID)
-		pk = pkPrefixRoom + testRoomID
+		pk := pkPrefixRoom + testRoomID
 		roomRec, err := table.consistentRead(pk)
 		assert.Equal(t, testRoomID, roomRec.RoomID)
 	})
 
-	testConnectionID2 := "test-newroom-conn2"
-	testConnection2 := New(testConnectionID2)
-	if err = table.Put(testConnection2); err != nil {
-		t.Fatal("Error failed to create test record")
-	}
-
 	t.Run("Failed to create dupplicated Room", func(t *testing.T) {
-		success, _ := cm.CreateRoom(testRoomID, testConnectionID2)
+		success, _ := cm.CreateRoom(testRoomID)
 		assert.False(t, success)
 
-		pk := pkPrefixConn + testConnectionID2
-		fetchedConn, _ := table.consistentRead(pk)
-		assert.NotEqual(t, testRoomID, fetchedConn.RoomID)
-		pk = pkPrefixRoom + testRoomID
+		pk := pkPrefixRoom + testRoomID
 		roomRec, _ := table.consistentRead(pk)
 		assert.NotNil(t, roomRec)
 	})
 
 	table.DeleteRoom(testRoomID)
+}
+
+func TestEnterRoom(t *testing.T) {
+
+	ConnectionTableName = "sls_rtc_connections"
+	table := newTable(ConnectionTableName)
+	cm, err := NewManager()
+
+	if err != nil {
+		t.Fatal("Error failed to initialize connection manager")
+	}
+	testConnectionID := "test-enterroom-conn1"
+	testConnection := NewConnection(testConnectionID)
+	if err = table.PutNewConnection(testConnection); err != nil {
+		t.Fatal("Error failed to create test record")
+	}
+	testRoomID := "enter-room-test"
+	room := NewRoom(testRoomID)
+	if err := table.PutNewRoom(room); err != nil {
+		t.Fatal("Error failed to create test record")
+	}
+
+	t.Run("Successful enter room", func(t *testing.T) {
+		beforeConn, _ := table.GetConn(testConnectionID)
+		assert.Equal(t, blankValue, beforeConn.RoomID)
+
+		err := cm.EnterRoom(testConnectionID, testRoomID)
+		assert.Nil(t, err)
+
+		afterConn, _ := table.consistentRead(beforeConn.PK)
+		assert.Equal(t, testRoomID, afterConn.RoomID)
+	})
+	testConnectionID2 := "test-enterroom-conn2"
+	testConnection2 := NewConnection(testConnectionID2)
+	if err = table.PutNewConnection(testConnection2); err != nil {
+		t.Fatal("Error failed to create test record")
+	}
+
+	t.Run("Fail to enter not found room", func(t *testing.T) {
+		fakeRoomID := "enter-room-test-fake"
+		beforeConn, _ := table.GetConn(testConnectionID2)
+		assert.Equal(t, blankValue, beforeConn.RoomID)
+
+		err := cm.EnterRoom(testConnectionID, fakeRoomID)
+		assert.NotNil(t, err)
+
+		afterConn, _ := table.consistentRead(beforeConn.PK)
+		assert.Equal(t, blankValue, afterConn.RoomID)
+	})
 	table.DeleteConnection(testConnectionID)
 	table.DeleteConnection(testConnectionID2)
+	table.DeleteRoom(testRoomID)
 
 }

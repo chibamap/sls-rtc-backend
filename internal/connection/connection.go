@@ -2,8 +2,12 @@ package connection
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
 // Connection dynamodb record structure
@@ -13,7 +17,34 @@ type Connection struct {
 	ConnectionID string `json:"connectionID"`
 	RoomID       string `json:"roomID"`
 	Username     string `json:"username"`
-	Owner        string
+}
+
+// Room dynamodb record structure
+type Room struct {
+	// ConnectionID request.RequestContext.ConnectionID
+	PK           string `json:"pk"`
+	ConnectionID string `json:"connectionID"`
+	RoomID       string `json:"roomID"`
+}
+
+// NewConnection new connection record
+func NewConnection(connectionID string) *Connection {
+	pk := pkPrefixConn + connectionID
+	return &Connection{
+		PK:           pk,
+		ConnectionID: connectionID,
+		RoomID:       blankValue,
+	}
+}
+
+// NewRoom return table record struct
+func NewRoom(roomID string) *Room {
+	pk := pkPrefixRoom + roomID
+	return &Room{
+		PK:           pk,
+		ConnectionID: blankValue,
+		RoomID:       roomID,
+	}
 }
 
 // New return Connection pointer
@@ -23,16 +54,6 @@ func New(connectionID string) *Connection {
 		PK:           pk,
 		ConnectionID: connectionID,
 		RoomID:       blankValue}
-}
-
-// NewRoom return table record struct
-func newRoom(roomID string) *tableRecord {
-	pk := pkPrefixRoom + roomID
-	return &tableRecord{
-		PK:           pk,
-		ConnectionID: blankValue,
-		RoomID:       roomID,
-	}
 }
 
 // Manager manage connection
@@ -61,11 +82,10 @@ func NewManager() (*Manager, error) {
 }
 
 // NewConnection make new connection and store to table
-func (m *Manager) NewConnection(connectionID string) (*Connection, error) {
-	conn := New(connectionID)
+func (m *Manager) NewConnection(connectionID string) error {
+	conn := NewConnection(connectionID)
 
-	err := m.table.Put(conn)
-	return conn, err
+	return m.table.PutConnection(conn)
 }
 
 // Disconnected cleanup records beside connection
@@ -95,7 +115,26 @@ func (m *Manager) RetrieveRoomConnections(roomID string) ([]*Connection, error) 
 }
 
 // CreateRoom create room
-func (m *Manager) CreateRoom(roomID string, ownerConnectionID string) (bool, error) {
-	room := newRoom(roomID)
-	return m.table.PutNewRoom(room, ownerConnectionID)
+func (m *Manager) CreateRoom(roomID string) (bool, error) {
+	room := NewRoom(roomID)
+	err := m.table.PutNewRoom(room)
+	if nil == err {
+		return true, nil
+	}
+	if aerr, ok := err.(awserr.Error); ok {
+		if aerr.Code() == dynamodb.ErrCodeConditionalCheckFailedException {
+			// retryable error
+			return false, nil
+		}
+	}
+	return false, err
+}
+
+// EnterRoom update roomid
+func (m *Manager) EnterRoom(connID string, roomID string) error {
+	if room, _ := m.table.GetRoom(roomID); room == nil {
+		return fmt.Errorf("room[%s] not found", roomID)
+	}
+
+	return m.table.UpdateConnectionRoomID(connID, roomID)
 }

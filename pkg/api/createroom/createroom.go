@@ -10,16 +10,6 @@ import (
 	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
 )
 
-// CreateRoomIF api class
-type createRoomIF struct {
-	ConnectionID string `json:"connectionID"`
-	RoomID       string `json:"roomID"`
-}
-
-type notificationFrame struct {
-	Type string `json:"type"`
-}
-
 const maxTry = 5
 
 // CreateRoom endpoint handler
@@ -29,8 +19,6 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 	if err != nil {
 		return "could not initialize connection manager", err
 	}
-
-	ownerID := req.RequestContext.ConnectionID
 
 	// loop until unique room has been created. up to 5 times. return error it retry more than 5 times
 	try := 1
@@ -42,7 +30,7 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 			break
 		}
 		uid = generateRoomID()
-		success, err = cm.CreateRoom(uid, ownerID)
+		success, err = cm.CreateRoom(uid)
 		if err != nil {
 			return "failed to create room", err
 		}
@@ -53,17 +41,12 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		try++
 	}
 
-	// notify success
-	message := &apigw.MessageFrame{
-		Type: apigw.TypeEnter,
-		Body: uid,
-	}
 	gwClient, err := apigw.New(req.RequestContext)
 	if err != nil {
 		return "failed to initialize apigateway client", err
 	}
 
-	if err := gwClient.Respond(message); err != nil {
+	if err := gwClient.RespondRoomCreated(uid); err != nil {
 		return "failed to respond", err
 	}
 	return "ok", nil

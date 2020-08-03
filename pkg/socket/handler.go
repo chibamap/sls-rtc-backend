@@ -12,7 +12,7 @@ func OnConnected(connectionID string) (string, error) {
 		return "failed to initialize manager", err
 	}
 
-	if _, err := cm.NewConnection(connectionID); err != nil {
+	if err = cm.NewConnection(connectionID); err != nil {
 		return "failed to connnect dynamodb", err
 	}
 

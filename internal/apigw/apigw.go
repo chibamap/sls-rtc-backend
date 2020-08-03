@@ -25,10 +25,19 @@ type MessageFrame struct {
 	Body string `json:"body"`
 }
 
+type EnterRoomMessageFrame struct {
+	// should be enter
+	Type         string `json:"type"`
+	RoomID       string `json:"roomID"`
+	ConnectionID string `json:"connectionID"`
+}
+
 const (
-	// TypeEnter enter room event
+	// TypeRoomCreated room created event. body is containing created room id
+	TypeRoomCreated = "room-created"
+	// TypeEnter enter room event.
 	TypeEnter = "enter"
-	// TypeMessage message event
+	// TypeMessage message event. body containing json encoded message data frame(TBD)
 	TypeMessage = "message"
 )
 
@@ -80,5 +89,46 @@ func (a *Apigw) Respond(message *MessageFrame) error {
 	}
 
 	_, err = a.client.PostToConnection(postInput)
+	return err
+}
+
+// RespondRoomCreated notify room created event
+func (a *Apigw) RespondRoomCreated(roomID string) error {
+	// notify success
+	message := &MessageFrame{
+		Type: TypeRoomCreated,
+		Body: roomID,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	return a.send(a.ctx.ConnectionID, data)
+}
+
+// RespondRoomEntered notify room created event
+func (a *Apigw) RespondRoomEntered(roomID string) error {
+	// notify success
+	message := &EnterRoomMessageFrame{
+		Type:         TypeEnter,
+		RoomID:       roomID,
+		ConnectionID: a.ctx.ConnectionID,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		return err
+	}
+	return a.send(a.ctx.ConnectionID, data)
+}
+
+func (a *Apigw) send(connID string, data []byte) error {
+	postInput := &apigatewaymanagementapi.PostToConnectionInput{
+		Data:         data,
+		ConnectionId: &connID,
+	}
+
+	_, err := a.client.PostToConnection(postInput)
 	return err
 }
