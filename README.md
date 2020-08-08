@@ -1,5 +1,80 @@
 # sls-rtc-backend
 
+
+
+
+## table design
+
+
+intuition of table spesification
+
+|   pk                       | connectionID  | roomID   | username |  remarks |
+|----------------------------|---------------|----------|----------|----------|
+| connectionID:78iujhyt542qw | 78iujhyt542qw | johnroom | John     |          |
+| connectionID:4edfgtredf0ol | 4edfgtredf0ol | johnroom | Sam      |           |
+| roomID:johnroom            |               |          |          | for unique check the roomID |
+
+
+## How to use
+
+### connect
+
+you can easily test websocket with `wscat` command
+```
+wscat -c wss://api.hogehoge-banana.xyz/slsrtc
+```
+
+you will receive response `connected` event as
+```
+{"type":"connected","body":"{your connection id}"}
+```
+
+
+### create room
+
+call create room api
+```
+{ "action": "createroom" }
+```
+
+then you will receive response `room-created` event as
+```
+{"type":"room-created","body":"{generated room id}"}
+```
+
+### enter room
+
+call enterroom api when you join a specific room
+
+```
+{"action":"enterroom","roomID":"{generated room id}"}
+```
+
+every room mate will receive `enter` events as
+```
+{"type":"enter","roomID":"{room id}","connectionID":"{your connection id}"}
+```
+
+### leave room
+
+when you disconnected, other room mate will receive `leave` event
+
+```
+{"type":"leave","roomID":"{room id}","connectionID":"{your connection id}"}
+```
+
+
+## Reference
+
+https://aws.amazon.com/jp/blogs/news/simulating-amazon-dynamodb-unique-constraints-using-transactions/
+
+
+
+-----
+
+以下、SAMテンプレ
+
+
 This is a sample template for sls-rtc-backend - Below is a brief explanation of what we have generated for you:
 
 ```bash
@@ -138,3 +213,5 @@ Here are a few ideas that you can use to get more acquainted as to how this over
 Next, you can use the following resources to know more about beyond hello world samples and how others structure their Serverless applications:
 
 * [AWS Serverless Application Repository](https://aws.amazon.com/serverless/serverlessrepo/)
+
+

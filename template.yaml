@@ -29,6 +29,33 @@ Resources:
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
 
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: Prod
+      Description: Prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref SlsRtcWebSocket
+
+  SlsRtcWebSocketMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+      ApiMappingKey: slsrtc
+      DomainName: api.hogehoge-banana.xyz
+      Stage: !Ref Stage
+
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - ConnectRoute
+    - DisconnectRoute
+    - MessageRoute
+    - CreateRoomRoute
+    - EnterRoomRoute
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -188,22 +215,6 @@ Resources:
       Principal: apigateway.amazonaws.com
 
 
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-    - ConnectRoute
-    - MessageRoute
-    - DisconnectRoute
-    Properties:
-      ApiId: !Ref SlsRtcWebSocket
-
-  Stage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      StageName: Prod
-      Description: Prod Stage
-      DeploymentId: !Ref Deployment
-      ApiId: !Ref SlsRtcWebSocket
 
   ConnectionsTable:
     Type: AWS::DynamoDB::Table
