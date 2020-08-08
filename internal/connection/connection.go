@@ -3,9 +3,9 @@ package connection
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
@@ -47,15 +47,6 @@ func NewRoom(roomID string) *Room {
 	}
 }
 
-// New return Connection pointer
-func New(connectionID string) *Connection {
-	pk := pkPrefixConn + connectionID
-	return &Connection{
-		PK:           pk,
-		ConnectionID: connectionID,
-		RoomID:       blankValue}
-}
-
 // Manager manage connection
 type Manager struct {
 	table *table
@@ -90,18 +81,7 @@ func (m *Manager) NewConnection(connectionID string) error {
 
 // Disconnected cleanup records beside connection
 func (m *Manager) Disconnected(connectionID string) error {
-	conn, err := m.table.GetConn(connectionID)
-	if err != nil {
-		return err
-	}
-
-	if err = m.table.DeleteConnection(connectionID); err != nil {
-		log.Println(err)
-	}
-	if err = m.table.DeleteRoom(conn.RoomID); err != nil {
-		log.Println(err)
-	}
-	return err
+	return m.table.DeleteConnection(connectionID)
 }
 
 // FindConnection find out connection record from table
@@ -137,4 +117,21 @@ func (m *Manager) EnterRoom(connID string, roomID string) error {
 	}
 
 	return m.table.UpdateConnectionRoomID(connID, roomID)
+}
+
+// FindRoomMates find all room mates
+func (m *Manager) FindRoomMates(roomID string) ([]Connection, error) {
+	keyCondition := "roomID = :roomID"
+	filter := "connectionID <> :blank"
+	expressionAttributeValues := map[string]*dynamodb.AttributeValue{
+		":roomID": {
+			S: aws.String(roomID),
+		},
+		":blank": {
+			S: aws.String(blankValue),
+		},
+	}
+
+	return m.table.QueryRoomMates(keyCondition, expressionAttributeValues, &filter)
+	//return m.table.QueryRoomMates(keyCondition, expressionAttributeValues, nil)
 }

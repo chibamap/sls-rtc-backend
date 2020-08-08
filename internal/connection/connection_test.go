@@ -168,3 +168,40 @@ func TestEnterRoom(t *testing.T) {
 	table.DeleteRoom(testRoomID)
 
 }
+
+func TestFindRoomMates(t *testing.T) {
+	ConnectionTableName = "sls_rtc_connections"
+	table := newTable(ConnectionTableName)
+	roomID := "testroom"
+	room := NewRoom(roomID)
+	table.PutNewRoom(room)
+	connID1 := "test-conn1"
+	connID2 := "test-conn2"
+	conn1 := NewConnection(connID1)
+	conn2 := NewConnection(connID2)
+	conn1.RoomID = roomID
+	conn2.RoomID = roomID
+	table.PutNewConnection(conn1)
+	table.PutNewConnection(conn2)
+
+	cm, _ := NewManager()
+
+	t.Run("Sucess retreive all connection roomMates", func(t *testing.T) {
+		roomMates, err := cm.FindRoomMates(roomID)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, roomMates)
+		assert.Len(t, roomMates, 2)
+
+		expectedMates := []string{connID1, connID2}
+
+		for _, rec := range roomMates {
+			assert.Equal(t, roomID, rec.RoomID)
+			assert.Contains(t, expectedMates, rec.ConnectionID)
+		}
+	})
+	table.DeleteConnection(connID1)
+	table.DeleteConnection(connID2)
+	table.DeleteRoom(roomID)
+
+}

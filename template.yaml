@@ -98,7 +98,7 @@ Resources:
     Properties:
       ApiId: !Ref SlsRtcWebSocket
       RouteKey: message
-      AuthorizationType: NONE
+      AuthorizationType: NON
       OperationName: MessageRoute
       Target: !Join
         - '/'
@@ -162,11 +162,11 @@ Resources:
       ApiId: !Ref SlsRtcWebSocket
       RouteKey: enterroom
       AuthorizationType: NONE
-      OperationName: CreateRoomRoute
+      OperationName: EnterRoomRoute
       Target: !Join
         - '/'
         - - 'integrations'
-          - !Ref CreateRoomInteg
+          - !Ref EnterRoomInteg
 
   EnterRoomInteg:
     Type: AWS::ApiGatewayV2::Integration
@@ -211,8 +211,6 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "pk"
           AttributeType: "S"
-        - AttributeName: "connectionID"
-          AttributeType: "S"
         - AttributeName: "roomID"
           AttributeType: "S"
 
@@ -225,15 +223,45 @@ Resources:
           KeySchema:
             - AttributeName: "roomID"
               KeyType: "HASH"
-            - AttributeName: "connectionID"
-              KeyType: "RANGE"
           Projection:
             NonKeyAttributes:
               - "userName"
+              - connectionID
             ProjectionType: "INCLUDE"
 
       BillingMode: PAY_PER_REQUEST
       TableName: !Ref TableName
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  ProcessDynamoDBStream:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cmd/streamhandler/
+      Handler: streamhandler
+      Runtime: go1.x
+      Policies: AWSLambdaDynamoDBExecutionRole
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          APIGW_DOMAIN_NAME: !Sub '${SlsRtcWebSocket}.execute-api.${AWS::Region}.amazonaws.com'
+          APIGW_STAGE: !Ref Stage
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt ConnectionsTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref TableName
+      - Statement:
+        - Effect: Allow
+          Action:
+          - 'execute-api:ManageConnections'
+          Resource:
+          - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SlsRtcWebSocket}/*'
 
   OnConnectFunction:
     Type: AWS::Serverless::Function

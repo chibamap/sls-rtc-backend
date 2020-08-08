@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"log"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -190,6 +191,26 @@ func (table *table) ScanAll() ([]Connection, error) {
 	}
 	output, err := table.ddb.Scan(input)
 	if err != nil {
+		return nil, err
+	}
+	recs := []Connection{}
+	dynamodbattribute.UnmarshalListOfMaps(output.Items, &recs)
+	return recs, nil
+}
+
+func (table *table) QueryRoomMates(keyCondition string, expressionAttributeValues map[string]*dynamodb.AttributeValue, filter *string) ([]Connection, error) {
+	input := &dynamodb.QueryInput{
+		ExpressionAttributeValues: expressionAttributeValues,
+		KeyConditionExpression:    aws.String(keyCondition),
+		TableName:                 table.tableName,
+		IndexName:                 aws.String("RoomMate"),
+	}
+	if filter != nil {
+		input.FilterExpression = filter
+	}
+	output, err := table.ddb.Query(input)
+	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	recs := []Connection{}

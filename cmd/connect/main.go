@@ -5,17 +5,19 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-
-	"github.com/hogehoge-banana/sls-rtc-backend/pkg/socket"
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
 )
 
 type proxyRequest events.APIGatewayWebsocketProxyRequest
 type proxyResponse events.APIGatewayProxyResponse
 
+func main() {
+	lambda.Start(handler)
+}
+
 func handler(request proxyRequest) (proxyResponse, error) {
-	log.Println("connected request")
 	connectionID := request.RequestContext.ConnectionID
-	msg, err := socket.OnConnected(connectionID)
+	msg, err := onConnected(connectionID)
 	if err != nil {
 		log.Println(msg)
 		return proxyResponse{}, err
@@ -27,6 +29,17 @@ func handler(request proxyRequest) (proxyResponse, error) {
 	}, nil
 }
 
-func main() {
-	lambda.Start(handler)
+// onConnected event handling on connected websocket
+func onConnected(connectionID string) (string, error) {
+
+	cm, err := connection.NewManager()
+	if err != nil {
+		return "failed to initialize manager", err
+	}
+
+	if err = cm.NewConnection(connectionID); err != nil {
+		return "failed to connnect dynamodb", err
+	}
+
+	return "ok", nil
 }

@@ -3,11 +3,10 @@ package createroom
 import (
 	"log"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/apigw"
-
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
 	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
+	"github.com/hogehoge-banana/sls-rtc-backend/internal/socket"
 )
 
 const maxTry = 5
@@ -41,12 +40,12 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		try++
 	}
 
-	gwClient, err := apigw.New(req.RequestContext)
+	s, err := socket.New(req.RequestContext.DomainName, req.RequestContext.Stage)
 	if err != nil {
 		return "failed to initialize apigateway client", err
 	}
 
-	if err := gwClient.RespondRoomCreated(uid); err != nil {
+	if err := s.SendRoomCreated(req.RequestContext.ConnectionID, uid); err != nil {
 		return "failed to respond", err
 	}
 	return "ok", nil
