@@ -20,6 +20,10 @@ Parameters:
     AllowedPattern: ^[A-Za-z_]+$
     ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
 
+  ApigwEndpoint:
+    Type: String
+    Default: 'https://api.hogehoge-banana.xyz/slsrtc'
+
 Resources:
 
   SlsRtcWebSocket:
@@ -255,8 +259,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
-          APIGW_DOMAIN_NAME: !Sub '${SlsRtcWebSocket}.execute-api.${AWS::Region}.amazonaws.com'
-          APIGW_STAGE: !Ref Stage
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
       Events:
         Stream:
           Type: DynamoDB
@@ -312,6 +315,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref TableName
@@ -332,6 +336,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref TableName

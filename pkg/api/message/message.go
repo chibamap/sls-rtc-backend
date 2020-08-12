@@ -2,6 +2,7 @@ package message
 
 import (
 	"errors"
+	"os"
 
 	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
 	"github.com/hogehoge-banana/sls-rtc-backend/internal/socket"
@@ -19,6 +20,15 @@ type MessageInterface struct {
 // Handler handle message
 type Handler struct {
 	ctx events.APIGatewayWebsocketProxyRequestContext
+}
+
+var (
+	// ApigatewayEndpoint ex. Prod
+	apigatewayEndpoint string
+)
+
+func init() {
+	apigatewayEndpoint = os.Getenv("APIGW_ENDPOINT")
 }
 
 // NewHandler return handler
@@ -51,9 +61,10 @@ func (h *Handler) OnMessage(param *MessageInterface) (string, error) {
 	message := &socket.MessageFrame{
 		Type: param.Type,
 		Data: param.Message,
+		From: h.ctx.ConnectionID,
 	}
 
-	s, err := socket.New(h.ctx.DomainName, h.ctx.Stage)
+	s, err := socket.New(apigatewayEndpoint)
 	if err != nil {
 		return "could not initialize socket", err
 	}

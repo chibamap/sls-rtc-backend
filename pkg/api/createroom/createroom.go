@@ -2,6 +2,7 @@ package createroom
 
 import (
 	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/google/uuid"
@@ -10,6 +11,15 @@ import (
 )
 
 const maxTry = 5
+
+var (
+	// ApigatewayEndpoint ex. Prod
+	apigatewayEndpoint string
+)
+
+func init() {
+	apigatewayEndpoint = os.Getenv("APIGW_ENDPOINT")
+}
 
 // CreateRoom endpoint handler
 func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
@@ -40,7 +50,7 @@ func CreateRoom(req events.APIGatewayWebsocketProxyRequest) (string, error) {
 		try++
 	}
 
-	s, err := socket.New(req.RequestContext.DomainName, req.RequestContext.Stage)
+	s, err := socket.New(apigatewayEndpoint)
 	if err != nil {
 		return "failed to initialize apigateway client", err
 	}

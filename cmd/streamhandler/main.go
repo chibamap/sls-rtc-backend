@@ -18,17 +18,14 @@ const (
 )
 
 var (
-	// ApigatewayDomainName ex.
-	apigatewayDomainName string
-	// ApigatewayStage ex. Prod
-	apigatewayStage string
+	// ApigatewayEndpoint ex. Prod
+	apigatewayEndpoint string
 	// socket
 	websocket *socket.Socket
 )
 
 func init() {
-	apigatewayDomainName = os.Getenv("APIGW_DOMAIN_NAME")
-	apigatewayStage = os.Getenv("APIGW_STAGE")
+	apigatewayEndpoint = os.Getenv("APIGW_ENDPOINT")
 }
 
 func main() {
@@ -44,7 +41,7 @@ type tableRecord struct {
 }
 
 func handleRequest(ctx context.Context, e events.DynamoDBEvent) {
-	websocket, _ = socket.New(apigatewayDomainName, apigatewayStage)
+	websocket, _ = socket.New(apigatewayEndpoint)
 
 	for _, record := range e.Records {
 		fmt.Printf("Processing request data for event ID %s, type %s.\n", record.EventID, record.EventName)

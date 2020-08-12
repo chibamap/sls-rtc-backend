@@ -2,7 +2,6 @@ package socket
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
@@ -34,6 +33,7 @@ type Socket struct {
 type MessageFrame struct {
 	Type string `json:"type"`
 	Data string `json:"body"`
+	From string `json:"from"`
 }
 
 // EnterRoomMessageFrame ...
@@ -45,7 +45,7 @@ type EnterRoomMessageFrame struct {
 }
 
 // New make dynamodb session
-func New(domainName, stage string) (*Socket, error) {
+func New(endpoint string) (*Socket, error) {
 	session, err := session.NewSession()
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func New(domainName, stage string) (*Socket, error) {
 
 	client := apigatewaymanagementapi.New(session)
 
-	client.Endpoint = fmt.Sprintf("https://%s/%s", domainName, stage)
+	client.Endpoint = endpoint
 	log.Printf("api gateway endpiont: %s", client.Endpoint)
 
 	return &Socket{
