@@ -1,5 +1,11 @@
 # sls-rtc-backend
 
+[こちら](https://hogehoge-banana.xyz/playground/sls-rtc/)のバックエンドの実装です。
+API Gatewayがwebsocketに対応していたのでシグナリングサーバーを実装してみました。
+
+試作なので、いろいろやることを端折っておりますので、いじめないでください。お願いします。
+
+
 This is a sample template for sls-rtc-backend - Below is a brief explanation of what we have generated for you:
 
 ```bash
