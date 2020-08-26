@@ -20,6 +20,10 @@ Parameters:
     AllowedPattern: ^[A-Za-z_]+$
     ConstraintDescription: 'Required. Can be characters and underscore only. No numbers or special characters allowed.'
 
+  ApigwEndpoint:
+    Type: String
+    Default: 'https://api.hogehoge-banana.xyz/slsrtc'
+
 Resources:
 
   SlsRtcWebSocket:
@@ -28,6 +32,33 @@ Resources:
       Name: WebRtcSignalingApi
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: "$request.body.action"
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: Prod
+      Description: Prod Stage
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref SlsRtcWebSocket
+
+  SlsRtcWebSocketMapping:
+    Type: AWS::ApiGatewayV2::ApiMapping
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+      ApiMappingKey: slsrtc
+      DomainName: api.hogehoge-banana.xyz
+      Stage: !Ref Stage
+
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - ConnectRoute
+    - DisconnectRoute
+    - MessageRoute
+    - CreateRoomRoute
+    - EnterRoomRoute
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
 
   ConnectRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -51,6 +82,16 @@ Resources:
         Fn::Sub:
             arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
 
+  OnConnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SlsRtcWebSocket
+      - OnConnectFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref OnConnectFunction
+      Principal: apigateway.amazonaws.com
+
   DisconnectRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -73,19 +114,29 @@ Resources:
         Fn::Sub:
             arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
 
-  SendRoute:
+  OnDisconnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SlsRtcWebSocket
+      - OnDisconnectFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref OnDisconnectFunction
+      Principal: apigateway.amazonaws.com
+
+  MessageRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref SlsRtcWebSocket
-      RouteKey: sendmessage
-      AuthorizationType: NONE
-      OperationName: SendRoute
+      RouteKey: message
+      AuthorizationType: NON
+      OperationName: MessageRoute
       Target: !Join
         - '/'
         - - 'integrations'
-          - !Ref SendInteg
+          - !Ref MessageInteg
 
-  SendInteg:
+  MessageInteg:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref SlsRtcWebSocket
@@ -95,66 +146,127 @@ Resources:
         Fn::Sub:
             arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
 
-  HelloRoute:
+  MessagePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SlsRtcWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref SendMessageFunction
+      Principal: apigateway.amazonaws.com
+
+  CreateRoomRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref SlsRtcWebSocket
-      RouteKey: hello
+      RouteKey: createroom
       AuthorizationType: NONE
-      OperationName: HelloRoute
+      OperationName: CreateRoomRoute
       Target: !Join
         - '/'
         - - 'integrations'
-          - !Ref HelloInteg
+          - !Ref CreateRoomInteg
 
-  HelloInteg:
+  CreateRoomInteg:
     Type: AWS::ApiGatewayV2::Integration
     Properties:
       ApiId: !Ref SlsRtcWebSocket
-      Description: Send Integration
+      Description: create room api
       IntegrationType: AWS_PROXY
       IntegrationUri:
         Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateRoomFunction.Arn}/invocations
 
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
+  CreateRoomPermission:
+    Type: AWS::Lambda::Permission
     DependsOn:
-    - ConnectRoute
-    - SendRoute
-    - DisconnectRoute
+      - SlsRtcWebSocket
     Properties:
-      ApiId: !Ref SlsRtcWebSocket
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CreateRoomFunction
+      Principal: apigateway.amazonaws.com
 
-  Stage:
-    Type: AWS::ApiGatewayV2::Stage
+
+  EnterRoomRoute:
+    Type: AWS::ApiGatewayV2::Route
     Properties:
-      StageName: Prod
-      Description: Prod Stage
-      DeploymentId: !Ref Deployment
       ApiId: !Ref SlsRtcWebSocket
+      RouteKey: enterroom
+      AuthorizationType: NONE
+      OperationName: EnterRoomRoute
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref EnterRoomInteg
+
+  EnterRoomInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref SlsRtcWebSocket
+      Description: enter room api
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EnterRoomFunction.Arn}/invocations
+
+  EnterRoomPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - SlsRtcWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref EnterRoomFunction
+      Principal: apigateway.amazonaws.com
+
+
 
   ConnectionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
-      - AttributeName: "connectionId"
-        AttributeType: "S"
+        - AttributeName: "pk"
+          AttributeType: "S"
+        - AttributeName: "roomID"
+          AttributeType: "S"
+
       KeySchema:
-      - AttributeName: "connectionId"
-        KeyType: "HASH"
+        - AttributeName: "pk"
+          KeyType: "HASH"
+
+      GlobalSecondaryIndexes:
+        - IndexName: "RoomMate"
+          KeySchema:
+            - AttributeName: "roomID"
+              KeyType: "HASH"
+          Projection:
+            NonKeyAttributes:
+              - "userName"
+              - connectionID
+            ProjectionType: "INCLUDE"
+
       BillingMode: PAY_PER_REQUEST
       TableName: !Ref TableName
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
 
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  ProcessDynamoDBStream:
+    Type: AWS::Serverless::Function
     Properties:
-      CodeUri: cmd/hello/
-      Handler: hey
+      CodeUri: cmd/streamhandler/
+      Handler: streamhandler
       Runtime: go1.x
+      Policies: AWSLambdaDynamoDBExecutionRole
       Environment:
         Variables:
           TABLE_NAME: !Ref TableName
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
+      Events:
+        Stream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt ConnectionsTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref TableName
@@ -179,15 +291,6 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName: !Ref TableName
 
-  OnConnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - SlsRtcWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnConnectFunction
-      Principal: apigateway.amazonaws.com
-
   OnDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -202,21 +305,54 @@ Resources:
       - DynamoDBCrudPolicy:
           TableName: !Ref TableName
 
-  OnDisconnectPermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - SlsRtcWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref OnDisconnectFunction
-      Principal: apigateway.amazonaws.com
-
   SendMessageFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: cmd/message/
       Handler: message
       MemorySize: 256
+      Runtime: go1.x
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref TableName
+      - Statement:
+        - Effect: Allow
+          Action:
+          - 'execute-api:ManageConnections'
+          Resource:
+          - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SlsRtcWebSocket}/*'
+
+  CreateRoomFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cmd/createroom/
+      Handler: createroom
+      MemorySize: 128
+      Runtime: go1.x
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref TableName
+          APIGW_ENDPOINT: !Ref ApigwEndpoint
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref TableName
+      - Statement:
+        - Effect: Allow
+          Action:
+          - 'execute-api:ManageConnections'
+          Resource:
+          - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SlsRtcWebSocket}/*'
+
+  EnterRoomFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: cmd/enterroom/
+      Handler: enterroom
+      MemorySize: 128
       Runtime: go1.x
       Environment:
         Variables:
@@ -230,15 +366,6 @@ Resources:
           - 'execute-api:ManageConnections'
           Resource:
           - !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SlsRtcWebSocket}/*'
-
-  SendMessagePermission:
-    Type: AWS::Lambda::Permission
-    DependsOn:
-      - SlsRtcWebSocket
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref SendMessageFunction
-      Principal: apigateway.amazonaws.com
 
 Outputs:
   ConnectionsTableArn:
