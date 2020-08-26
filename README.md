@@ -1,9 +1,10 @@
 # sls-rtc-backend
 
-[これ](https://hogehoge-banana.xyz/playground/sls-rtc/)のバックエンドです。
+
+[こちら](https://hogehoge-banana.xyz/playground/sls-rtc/)のバックエンドの実装です。
 AWS SAMを利用させていただいております。
 とにかくwebrtcを試してみたいために作ったのでいろいろザルです。
-ぶっちゃけよく見ればいろいろバレていろいろできてしまいますが、
+ぶっちゃけよく見ればいろいろバレて、いろいろできてしまいますが、
 完全に趣味で私のポケットマネーで運営してるのでどうかいじめないでください。お願いします。
 
 ## table design
