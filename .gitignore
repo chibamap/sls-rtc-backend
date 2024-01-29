@@ -19,3 +19,5 @@
 
 .aws-sam
 go.sum
+tmp
+.envrc

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/pkg/api/message"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/message"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

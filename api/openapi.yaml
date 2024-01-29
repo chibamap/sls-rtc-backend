@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: ビデオミーティングスペース管理API
+  description: |-
+    ビデオミーティングスペース管理API
+    https://github.com/hogehoge-banana/sls-rtc-backend
+
+  termsOfService: http://swagger.io/terms/
+  contact:
+    email: apiteam@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+  - url: http://localhost:2000/api/v1
+
+tags:
+
+  - name: connection
+    description: connection
+  - name: room
+    description: room
+
+paths:
+  /connect:
+    post:
+      tags:
+        - connection
+      summary: connect
+      description: |
+        re
+      operationId: connect
+      requestBody:
+        $ref: '#/components/requestBodies/Connect'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participant'
+  /connect/{participantId}/ping:
+    get:
+      tags:
+        - connection
+      summary: ping connection
+      description: ping to connection
+      parameters:
+        - in: path
+          name: participantId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: pong
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /room:
+    post:
+      tags:
+        - room
+      summary: create new room
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+
+  /room/{roomId}:
+    put:
+      tags:
+        - room
+      summary: enter room
+      parameters:
+        - in: path
+          name: roomId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        $ref: '#/components/requestBodies/EnterRoom'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+components:
+
+  schemas:
+    PushSubscription:
+      description: |
+        request to connect
+      required:
+        - p256dh
+        - auth
+      type: object
+      properties:
+        p256dh:
+          type: string
+          example: fdvczxveqwerfvc
+        auth:
+          type: string
+          example: zcxvqwer
+        endpoint:
+          type: string
+
+    Participant:
+      type: object
+      properties:
+        participantID:
+          type: string
+        connectionID:
+          type: string
+        clientID:
+          type: string
+        roomID:
+          type: string
+
+    Room:
+      type: object
+      properties:
+        roomId:
+          type: string
+
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+
+  requestBodies:
+    Connect:
+      description: |
+        request connecting
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PushSubscription'
+
+    EnterRoom:
+      description: enter room request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              participantID:
+                type: string
+

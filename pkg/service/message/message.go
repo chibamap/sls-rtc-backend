@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/socket"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/connection"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/socket"
 
 	"github.com/aws/aws-lambda-go/events"
 )

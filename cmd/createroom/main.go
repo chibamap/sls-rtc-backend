@@ -5,7 +5,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/hogehoge-banana/sls-rtc-backend/pkg/api/createroom"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/createroom"
 )
 
 type proxyResponse events.APIGatewayProxyResponse

@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/socket"
-	"github.com/hogehoge-banana/sls-rtc-backend/pkg/api/roommate"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/roommate"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/socket"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"

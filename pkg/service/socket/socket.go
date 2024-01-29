@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/connection"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/apigatewaymanagementapi"

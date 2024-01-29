@@ -34,6 +34,14 @@ const (
 
 var ddbsession *dynamodb.DynamoDB
 var once sync.Once
+var ddbtable *table
+
+func init() {
+	ddbtable = newTable("sls_rtc_connections")
+}
+func GetDefaultTable() *table {
+	return ddbtable
+}
 
 // Newtable instance from table name
 func newTable(tableName string) *table {

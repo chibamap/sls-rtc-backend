@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/hogehoge-banana/sls-rtc-backend/internal/connection"
+	"github.com/hogehoge-banana/sls-rtc-backend/pkg/service/connection"
 )
 
 type proxyResponse events.APIGatewayProxyResponse

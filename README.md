@@ -12,11 +12,41 @@ AWS SAMを利用させていただいております。
 dynamodbのレコードイメージ
 
 
-|   pk                       | connectionID  | roomID   |
-|----------------------------|---------------|----------|
-| connectionID:78iujhyt542qw | 78iujhyt542qw | johnroom |
-| connectionID:4edfgtredf0ol | 4edfgtredf0ol | johnroom |
-| roomID:johnroom            |               |          |
+参加者: participant
+ws接続: connection
+meetスペース: room
+
+aaa: connect
+
+|   pk              | wpush-p256dh | wpush-auth | participantID |
+|-------------------| -------------|----------| ------------- |
+| participantID:aaa | asd          | qwer     |aaa           |
+
+issue participantId from backend: aaa
+
+aaa: enter room
+
+|   pk              | wpush-p256dh | wpush-auth | participantID | roomId |
+|-------------------| -------------|----------| ------------- | ------ |
+| participantID:aaa | asd          | qwer     |aaa            | room1 |
+
+
+bbb: connect
+
+|   pk              | wpush-p256dh | wpush-auth | participantID | roomId |
+|-------------------| -------------|----------| ------------- | ------ |
+| participantID:aaa | asd          | qwer     |aaa            | room1  |
+| participantID:bbb | hjk          | yuio     |bbb            |        |
+
+
+bbb: enter room
+
+|   pk              | wpush-p256dh | wpush-auth | participantID | roomId |
+|-------------------| -------------|----------| ------------- | ------ |
+| participantID:aaa | asd          | qwer     |aaa            | room1  |
+| participantID:bbb | hjk          | yuio     |bbb            | room1  |
+
+
 
 GSI
 
@@ -90,6 +120,5 @@ create room で作成したroom id を指定してroomに参加します。
 ## Reference
 
 https://aws.amazon.com/jp/blogs/news/simulating-amazon-dynamodb-unique-constraints-using-transactions/
-
 
 
